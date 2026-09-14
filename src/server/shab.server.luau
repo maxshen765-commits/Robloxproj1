@@ -3,6 +3,15 @@ local Workspace = game:GetService("Workspace")
 local SHABSTER_NAME = "Shabster"
 local SHABSTER_HEALTH = 1
 local RESPAWN_DELAY = 3
+local WALK_RADIUS = 25
+
+local function getSpawnPosition(): Vector3
+	local spawnLocation = Workspace:FindFirstChildOfClass("SpawnLocation")
+	if spawnLocation then
+		return spawnLocation.Position + Vector3.new(8, 0, 0)
+	end
+	return Vector3.new(8, 4, 0)
+end
 
 local function createSnowball(model: Model, name: string, size: Vector3, position: Vector3): BasePart
 	local snowball = Instance.new("Part")
@@ -47,8 +56,7 @@ local function createShabster(): Model
 	local shabster = Instance.new("Model")
 	shabster.Name = SHABSTER_NAME
 
-	local spawnLocation = Workspace:FindFirstChildOfClass("SpawnLocation")
-	local spawnPosition = if spawnLocation then spawnLocation.Position + Vector3.new(8, 0, 0) else Vector3.new(8, 4, 0)
+	local spawnPosition = getSpawnPosition()
 
 	local rootPart = createPart(shabster, "HumanoidRootPart", Vector3.new(2, 2, 1), Color3.new(1, 1, 1), spawnPosition + Vector3.new(0, 2.5, 0))
 	rootPart.Transparency = 1
@@ -107,6 +115,33 @@ local function createShabster(): Model
 
 	shabster.PrimaryPart = rootPart
 	shabster.Parent = Workspace
+
+	local function getGroundPosition(origin: Vector3): Vector3
+		local raycastParams = RaycastParams.new()
+		raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+		raycastParams.FilterDescendantsInstances = { shabster }
+		local result = Workspace:Raycast(origin + Vector3.new(0, 25, 0), Vector3.new(0, -60, 0), raycastParams)
+		if result then
+			return result.Position + Vector3.new(0, 3, 0)
+		end
+		return origin
+	end
+
+	local function walkLoop()
+		while shabster.Parent do
+			if humanoid.Health <= 0 then
+				break
+			end
+			local homePosition = getSpawnPosition()
+			local offset = Vector3.new(math.random(-WALK_RADIUS, WALK_RADIUS), 0, math.random(-WALK_RADIUS, WALK_RADIUS))
+			local destination = getGroundPosition(homePosition + offset)
+			humanoid:MoveTo(destination)
+			humanoid.MoveToFinished:Wait()
+			task.wait(math.random(0.5, 1.5))
+		end
+	end
+
+	task.spawn(walkLoop)
 
 	humanoid.Died:Connect(function()
 		task.delay(RESPAWN_DELAY, function()
