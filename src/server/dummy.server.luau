@@ -3,6 +3,7 @@ local Workspace = game:GetService("Workspace")
 local DUMMY_NAME = "WalkingDummy"
 local DUMMY_HEALTH = 100
 local WALK_RADIUS = 40
+local DUMMY_COLOR = BrickColor.new("Medium stone grey")
 
 local function createPart(model: Model, name: string, size: Vector3, color: BrickColor): BasePart
 	local part = Instance.new("Part")
@@ -34,16 +35,16 @@ local function createDummy(): Model
 	local dummy = Instance.new("Model")
 	dummy.Name = DUMMY_NAME
 
-	local rootPart = createPart(dummy, "HumanoidRootPart", Vector3.new(2, 2, 1), BrickColor.new("Medium stone grey"))
+	local rootPart = createPart(dummy, "HumanoidRootPart", Vector3.new(2, 2, 1), DUMMY_COLOR)
 	rootPart.Transparency = 1
 	rootPart.CanCollide = false
 
-	local torso = createPart(dummy, "Torso", Vector3.new(2, 2, 1), BrickColor.new("Bright blue"))
-	local head = createPart(dummy, "Head", Vector3.new(2, 1, 1), BrickColor.new("Bright yellow"))
-	local leftArm = createPart(dummy, "Left Arm", Vector3.new(1, 2, 1), BrickColor.new("Bright yellow"))
-	local rightArm = createPart(dummy, "Right Arm", Vector3.new(1, 2, 1), BrickColor.new("Bright yellow"))
-	local leftLeg = createPart(dummy, "Left Leg", Vector3.new(1, 2, 1), BrickColor.new("Bright green"))
-	local rightLeg = createPart(dummy, "Right Leg", Vector3.new(1, 2, 1), BrickColor.new("Bright green"))
+	local torso = createPart(dummy, "Torso", Vector3.new(2, 2, 1), DUMMY_COLOR)
+	local head = createPart(dummy, "Head", Vector3.new(2, 1, 1), DUMMY_COLOR)
+	local leftArm = createPart(dummy, "Left Arm", Vector3.new(1, 2, 1), DUMMY_COLOR)
+	local rightArm = createPart(dummy, "Right Arm", Vector3.new(1, 2, 1), DUMMY_COLOR)
+	local leftLeg = createPart(dummy, "Left Leg", Vector3.new(1, 2, 1), DUMMY_COLOR)
+	local rightLeg = createPart(dummy, "Right Leg", Vector3.new(1, 2, 1), DUMMY_COLOR)
 
 	local humanoid = Instance.new("Humanoid")
 	humanoid.Name = "Humanoid"
@@ -51,6 +52,48 @@ local function createDummy(): Model
 	humanoid.Health = DUMMY_HEALTH
 	humanoid.RigType = Enum.HumanoidRigType.R6
 	humanoid.Parent = dummy
+
+	local healthBar = Instance.new("BillboardGui")
+	healthBar.Name = "HealthBar"
+	healthBar.Adornee = head
+	healthBar.AlwaysOnTop = true
+	healthBar.Size = UDim2.fromOffset(120, 28)
+	healthBar.StudsOffset = Vector3.new(0, 2.5, 0)
+	healthBar.Parent = dummy
+
+	local background = Instance.new("Frame")
+	background.Name = "Background"
+	background.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+	background.BorderSizePixel = 0
+	background.Size = UDim2.fromScale(1, 0.55)
+	background.Position = UDim2.fromScale(0, 0.2)
+	background.Parent = healthBar
+
+	local fill = Instance.new("Frame")
+	fill.Name = "Fill"
+	fill.BackgroundColor3 = Color3.fromRGB(60, 200, 80)
+	fill.BorderSizePixel = 0
+	fill.Size = UDim2.fromScale(1, 1)
+	fill.Parent = background
+
+	local healthText = Instance.new("TextLabel")
+	healthText.Name = "HealthText"
+	healthText.BackgroundTransparency = 1
+	healthText.Size = UDim2.fromScale(1, 1)
+	healthText.Font = Enum.Font.GothamBold
+	healthText.TextColor3 = Color3.new(1, 1, 1)
+	healthText.TextScaled = true
+	healthText.TextStrokeTransparency = 0.5
+	healthText.Parent = healthBar
+
+	local function updateHealthBar(currentHealth: number)
+		local healthRatio = math.clamp(currentHealth / humanoid.MaxHealth, 0, 1)
+		fill.Size = UDim2.fromScale(healthRatio, 1)
+		healthText.Text = string.format("%d / %d", math.ceil(currentHealth), math.ceil(humanoid.MaxHealth))
+	end
+
+	humanoid.HealthChanged:Connect(updateHealthBar)
+	updateHealthBar(humanoid.Health)
 
 	connectParts(torso, "RootJoint", rootPart, torso, CFrame.new(0, 0, 0), CFrame.new(0, 0, 0))
 	connectParts(torso, "Neck", torso, head, CFrame.new(0, 1, 0), CFrame.new(0, -0.5, 0))
